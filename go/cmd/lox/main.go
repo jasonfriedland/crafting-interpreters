@@ -2,28 +2,49 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 )
 
+type parseError struct {
+	line    int
+	message string
+}
+
+func (e parseError) Error() string {
+	return fmt.Sprintf("line: %d, error: %s", e.line, e.message)
+}
+
 func main() {
+	var err error
 	if len(os.Args) > 2 {
 		fmt.Println("error: invalid args")
 		os.Exit(-1)
-	} else if len(os.Args) == 2 {
-		runFile()
+	}
+	if len(os.Args) == 2 {
+		err = runFile(os.Args[1])
 	} else {
-		runPrompt()
+		err = runPrompt()
+	}
+	if err != nil {
+		fmt.Println("error:", err)
+		os.Exit(-1)
 	}
 }
 
-func runFile() {
-	run()
+func runFile(path string) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	return run(f)
 }
 
-func runPrompt() {
-	run()
+func runPrompt() error {
+	return run(nil)
 }
 
-func run() {
+func run(r io.Reader) error {
 	fmt.Println("running")
+	return nil
 }

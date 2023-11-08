@@ -1,10 +1,12 @@
 package token
 
-type Token int
+import "fmt"
 
-//go:generate stringer -type=Token
+type TokenType int
+
+//go:generate stringer -type=TokenType
 const (
-	UNKNOWN Token = iota
+	UNKNOWN TokenType = iota
 	// Single-character tokens.
 	LEFT_PAREN
 	RIGHT_PAREN
@@ -53,3 +55,16 @@ const (
 
 	EOF
 )
+
+// Token represents a syntax token.
+type Token struct {
+	Type    TokenType
+	Lexeme  string
+	Literal any
+	Line    int
+}
+
+// String representation of a token.
+func (t Token) String() string {
+	return fmt.Sprintf("%s %s %s", t.Type, t.Lexeme, t.Literal)
+}
