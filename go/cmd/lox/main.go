@@ -24,4 +24,6 @@ func runPrompt() {
 	run()
 }
 
-func run() {}
+func run() {
+	fmt.Println("running")
+}
