@@ -1,41 +1,30 @@
 package scanner
 
 import (
+	"io"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/jasonfriedland/crafting-interpreters/pkg/token"
 )
 
 func TestScanner_Scan(t *testing.T) {
-	type fields struct {
-		start   int
-		current int
-		line    int
-		source  []byte
-	}
 	tests := []struct {
 		name    string
-		fields  fields
+		r       io.Reader
 		want    []*token.Token
 		wantErr bool
 	}{
 		{
 			"Empty case",
-			fields{},
-			[]*token.Token{
-				{
-					Type: token.EOF,
-				},
-			},
-			false,
+			nil,
+			nil,
+			true,
 		},
 		{
 			"Parens case",
-			fields{
-				line:   1,
-				source: []byte("hello ( how ) are you?"),
-			},
+			strings.NewReader("hello ( how ) are you?"),
 			[]*token.Token{
 				{
 					Type: token.LEFT_PAREN,
@@ -54,10 +43,7 @@ func TestScanner_Scan(t *testing.T) {
 		},
 		{
 			"Parens case with newlines",
-			fields{
-				line:   1,
-				source: []byte("hello\n( how\n) are you?\n"),
-			},
+			strings.NewReader("hello\n( how\n) are you?\n"),
 			[]*token.Token{
 				{
 					Type: token.LEFT_PAREN,
@@ -77,19 +63,56 @@ func TestScanner_Scan(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &Scanner{
-				start:   tt.fields.start,
-				current: tt.fields.current,
-				line:    tt.fields.line,
-				source:  tt.fields.source,
-			}
-			got, err := s.Scan()
+			s, _ := New(tt.r)
+			err := s.Scan()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Scanner.Scan() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+			if err == nil && !reflect.DeepEqual(s.tokens, tt.want) {
+				t.Errorf("Scanner.Scan() = %v, want %v", s.tokens, tt.want)
+			}
+		})
+	}
+}
+
+func TestNew(t *testing.T) {
+	type args struct {
+		r io.Reader
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *Scanner
+		wantErr bool
+	}{
+		{
+			"Empty case, error",
+			args{},
+			nil,
+			true,
+		},
+		{
+			"Simple case",
+			args{
+				strings.NewReader("hello testing"),
+			},
+			&Scanner{
+				line:   1,
+				source: []byte("hello testing"),
+			},
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := New(tt.args.r)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Scanner.Scan() = %v, want %v", got, tt.want)
+				t.Errorf("New() = %v, want %v", got, tt.want)
 			}
 		})
 	}
