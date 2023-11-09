@@ -12,7 +12,7 @@ func TestScanner_Scan(t *testing.T) {
 		start   int
 		current int
 		line    int
-		source  string
+		source  []byte
 	}
 	tests := []struct {
 		name    string
@@ -21,11 +21,57 @@ func TestScanner_Scan(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			"",
-			fields{
-				source: "hello (\n how are you\n((\n",
+			"Empty case",
+			fields{},
+			[]*token.Token{
+				{
+					Type: token.EOF,
+				},
 			},
-			nil,
+			false,
+		},
+		{
+			"Parens case",
+			fields{
+				line:   1,
+				source: []byte("hello ( how ) are you?"),
+			},
+			[]*token.Token{
+				{
+					Type: token.LEFT_PAREN,
+					Line: 1,
+				},
+				{
+					Type: token.RIGHT_PAREN,
+					Line: 1,
+				},
+				{
+					Type: token.EOF,
+					Line: 1,
+				},
+			},
+			false,
+		},
+		{
+			"Parens case with newlines",
+			fields{
+				line:   1,
+				source: []byte("hello\n( how\n) are you?\n"),
+			},
+			[]*token.Token{
+				{
+					Type: token.LEFT_PAREN,
+					Line: 2,
+				},
+				{
+					Type: token.RIGHT_PAREN,
+					Line: 3,
+				},
+				{
+					Type: token.EOF,
+					Line: 4,
+				},
+			},
 			false,
 		},
 	}

@@ -1,30 +1,46 @@
 package scanner
 
-import "github.com/jasonfriedland/crafting-interpreters/pkg/token"
+import (
+	"io"
+
+	"github.com/jasonfriedland/crafting-interpreters/pkg/token"
+)
 
 type Scanner struct {
 	start, current, line int
-	source               string
+	source               []byte
 }
 
-func New(source string) *Scanner {
-	return &Scanner{
-		source: source,
-		line:   1,
+func New(r io.Reader) (*Scanner, error) {
+	s := &Scanner{
+		line: 1,
 	}
+	_, err := r.Read(s.source)
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
 }
 
 func (s *Scanner) Scan() ([]*token.Token, error) {
 	var tokens []*token.Token
-	for s.current >= len(s.source) {
-		c := s.advance()
+	for i := 0; i < len(s.source); i++ {
+		c := s.source[i]
 		switch string(c) {
 		case "(":
 			tokens = append(tokens, &token.Token{
 				Type: token.LEFT_PAREN,
 				Line: s.line,
 			})
+		case ")":
+			tokens = append(tokens, &token.Token{
+				Type: token.RIGHT_PAREN,
+				Line: s.line,
+			})
+		case "\n":
+			s.line += 1
 		}
+
 	}
 	// Lastly append an EOF
 	tokens = append(tokens,
@@ -40,9 +56,4 @@ func (s *Scanner) Scan() ([]*token.Token, error) {
 
 func (s *Scanner) scanToken() string {
 	return ""
-}
-
-func (s *Scanner) advance() byte {
-	s.current += 1
-	return s.source[s.current]
 }
