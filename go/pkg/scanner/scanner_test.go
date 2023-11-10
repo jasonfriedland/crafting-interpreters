@@ -23,88 +23,107 @@ func TestScanner_Scan(t *testing.T) {
 			true,
 		},
 		{
-			"Multi case",
-			strings.NewReader("!he = llo\n( how <= >= \n) < > are you?\ni {am}\nwell, well. lets + this\nand - the * as\nwell;!= and == !"),
+			"EOL match case",
+			strings.NewReader("/"),
 			[]*token.Token{
 				{
-					Type: token.BANG,
+					Type: token.SLASH,
 					Line: 1,
-				},
-				{
-					Type: token.EQUAL,
-					Line: 1,
-				},
-				{
-					Type: token.LEFT_PAREN,
-					Line: 2,
-				},
-				{
-					Type: token.LESS_EQUAL,
-					Line: 2,
-				},
-				{
-					Type: token.GREATER_EQUAL,
-					Line: 2,
-				},
-				{
-					Type: token.RIGHT_PAREN,
-					Line: 3,
-				},
-				{
-					Type: token.LESS,
-					Line: 3,
-				},
-				{
-					Type: token.GREATER,
-					Line: 3,
-				},
-				{
-					Type: token.LEFT_BRACE,
-					Line: 4,
-				},
-				{
-					Type: token.RIGHT_BRACE,
-					Line: 4,
-				},
-				{
-					Type: token.COMMA,
-					Line: 5,
-				},
-				{
-					Type: token.DOT,
-					Line: 5,
-				},
-				{
-					Type: token.PLUS,
-					Line: 5,
-				},
-				{
-					Type: token.MINUS,
-					Line: 6,
-				},
-				{
-					Type: token.STAR,
-					Line: 6,
-				},
-				{
-					Type: token.SEMICOLON,
-					Line: 7,
-				},
-				{
-					Type: token.BANG_EQUAL,
-					Line: 7,
-				},
-				{
-					Type: token.EQUAL_EQUAL,
-					Line: 7,
-				},
-				{
-					Type: token.BANG,
-					Line: 7,
 				},
 				{
 					Type: token.EOF,
+					Line: 1,
+				},
+			},
+			false,
+		},
+		{
+			"Multi case",
+			strings.NewReader("// this is a comment, with + - = != things!\n!he = llo\n( how\t\r <= >= \n) < > are you?\ni {am}\nwell, well. lets + this\nand - the * as\nwell;!= / and == !\n// the end + !="),
+			[]*token.Token{
+				{
+					Type: token.BANG,
+					Line: 2,
+				},
+				{
+					Type: token.EQUAL,
+					Line: 2,
+				},
+				{
+					Type: token.LEFT_PAREN,
+					Line: 3,
+				},
+				{
+					Type: token.LESS_EQUAL,
+					Line: 3,
+				},
+				{
+					Type: token.GREATER_EQUAL,
+					Line: 3,
+				},
+				{
+					Type: token.RIGHT_PAREN,
+					Line: 4,
+				},
+				{
+					Type: token.LESS,
+					Line: 4,
+				},
+				{
+					Type: token.GREATER,
+					Line: 4,
+				},
+				{
+					Type: token.LEFT_BRACE,
+					Line: 5,
+				},
+				{
+					Type: token.RIGHT_BRACE,
+					Line: 5,
+				},
+				{
+					Type: token.COMMA,
+					Line: 6,
+				},
+				{
+					Type: token.DOT,
+					Line: 6,
+				},
+				{
+					Type: token.PLUS,
+					Line: 6,
+				},
+				{
+					Type: token.MINUS,
 					Line: 7,
+				},
+				{
+					Type: token.STAR,
+					Line: 7,
+				},
+				{
+					Type: token.SEMICOLON,
+					Line: 8,
+				},
+				{
+					Type: token.BANG_EQUAL,
+					Line: 8,
+				},
+				{
+					Type: token.SLASH,
+					Line: 8,
+				},
+				{
+					Type: token.EQUAL_EQUAL,
+					Line: 8,
+				},
+				{
+					Type: token.BANG,
+					Line: 8,
+				},
+				{
+					Type: token.EOF,
+					Line: 9,
 				},
 			},
 			false,

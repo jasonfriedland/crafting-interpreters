@@ -7,6 +7,7 @@ import (
 	"github.com/jasonfriedland/crafting-interpreters/pkg/token"
 )
 
+// Scanner is a Scanner type.
 type Scanner struct {
 	current int
 	line    int
@@ -14,6 +15,7 @@ type Scanner struct {
 	tokens  []*token.Token
 }
 
+// New builds a new Scanner from the input io.Reader.
 func New(r io.Reader) (*Scanner, error) {
 	if r == nil {
 		return nil, fmt.Errorf("nil Reader")
@@ -82,6 +84,20 @@ func (s *Scanner) Scan() error {
 			} else {
 				s.addToken(token.GREATER)
 			}
+		case "/":
+			if s.match("/") {
+				// A comment goes until the end of the line.
+				for string(s.peek()) != "\n" && !s.eof() {
+					s.next()
+				}
+			} else {
+				s.addToken(token.SLASH)
+			}
+		// Ignore the following
+		case " ":
+		case "\r":
+		case "\t":
+		// New line
 		case "\n":
 			s.line += 1
 		default:
@@ -99,6 +115,14 @@ func (s *Scanner) next() byte {
 	c := s.source[s.current]
 	s.current++
 	return c
+}
+
+// peek returns the next byte character but doesn't increment the counter.
+func (s *Scanner) peek() byte {
+	if s.eof() {
+		return 0
+	}
+	return s.source[s.current]
 }
 
 // match returns whether the byte at the current position matches the passed in
