@@ -23,30 +23,27 @@ func TestScanner_Scan(t *testing.T) {
 			true,
 		},
 		{
-			"Parens case",
-			strings.NewReader("hello ( how ) are you?"),
+			"Multi case",
+			strings.NewReader("!he = llo\n( how <= >= \n) < > are you?\ni {am}\nwell, well. lets + this\nand - the * as\nwell;!= and == !"),
 			[]*token.Token{
 				{
-					Type: token.LEFT_PAREN,
+					Type: token.BANG,
 					Line: 1,
 				},
 				{
-					Type: token.RIGHT_PAREN,
+					Type: token.EQUAL,
 					Line: 1,
 				},
-				{
-					Type: token.EOF,
-					Line: 1,
-				},
-			},
-			false,
-		},
-		{
-			"Parens case with newlines",
-			strings.NewReader("hello\n( how\n) are you?\n"),
-			[]*token.Token{
 				{
 					Type: token.LEFT_PAREN,
+					Line: 2,
+				},
+				{
+					Type: token.LESS_EQUAL,
+					Line: 2,
+				},
+				{
+					Type: token.GREATER_EQUAL,
 					Line: 2,
 				},
 				{
@@ -54,8 +51,60 @@ func TestScanner_Scan(t *testing.T) {
 					Line: 3,
 				},
 				{
-					Type: token.EOF,
+					Type: token.LESS,
+					Line: 3,
+				},
+				{
+					Type: token.GREATER,
+					Line: 3,
+				},
+				{
+					Type: token.LEFT_BRACE,
 					Line: 4,
+				},
+				{
+					Type: token.RIGHT_BRACE,
+					Line: 4,
+				},
+				{
+					Type: token.COMMA,
+					Line: 5,
+				},
+				{
+					Type: token.DOT,
+					Line: 5,
+				},
+				{
+					Type: token.PLUS,
+					Line: 5,
+				},
+				{
+					Type: token.MINUS,
+					Line: 6,
+				},
+				{
+					Type: token.STAR,
+					Line: 6,
+				},
+				{
+					Type: token.SEMICOLON,
+					Line: 7,
+				},
+				{
+					Type: token.BANG_EQUAL,
+					Line: 7,
+				},
+				{
+					Type: token.EQUAL_EQUAL,
+					Line: 7,
+				},
+				{
+					Type: token.BANG,
+					Line: 7,
+				},
+				{
+					Type: token.EOF,
+					Line: 7,
 				},
 			},
 			false,
@@ -70,7 +119,7 @@ func TestScanner_Scan(t *testing.T) {
 				return
 			}
 			if err == nil && !reflect.DeepEqual(s.tokens, tt.want) {
-				t.Errorf("Scanner.Scan() = %v, want %v", s.tokens, tt.want)
+				t.Errorf("Scanner.Scan() = %+v, want %+v", s.tokens, tt.want)
 			}
 		})
 	}

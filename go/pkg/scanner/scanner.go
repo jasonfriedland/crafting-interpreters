@@ -8,9 +8,10 @@ import (
 )
 
 type Scanner struct {
-	line   int
-	source []byte
-	tokens []*token.Token
+	current int
+	line    int
+	source  []byte
+	tokens  []*token.Token
 }
 
 func New(r io.Reader) (*Scanner, error) {
@@ -28,12 +29,14 @@ func New(r io.Reader) (*Scanner, error) {
 	return s, nil
 }
 
+// Scan is the main routine of a Scanner which iterates over the source, and
+// generates a slice of tokens.
 func (s *Scanner) Scan() error {
 	if s == nil || len(s.source) == 0 {
 		return fmt.Errorf("invalid scanner")
 	}
-	for i := 0; i < len(s.source); i++ {
-		c := s.source[i]
+	for s.current < len(s.source) {
+		c := s.next()
 		switch string(c) {
 		case "(":
 			s.addToken(token.LEFT_PAREN)
@@ -55,8 +58,34 @@ func (s *Scanner) Scan() error {
 			s.addToken(token.SEMICOLON)
 		case "*":
 			s.addToken(token.STAR)
+		case "!":
+			if s.match("=") {
+				s.addToken(token.BANG_EQUAL)
+			} else {
+				s.addToken(token.BANG)
+			}
+		case "=":
+			if s.match("=") {
+				s.addToken(token.EQUAL_EQUAL)
+			} else {
+				s.addToken(token.EQUAL)
+			}
+		case "<":
+			if s.match("=") {
+				s.addToken(token.LESS_EQUAL)
+			} else {
+				s.addToken(token.LESS)
+			}
+		case ">":
+			if s.match("=") {
+				s.addToken(token.GREATER_EQUAL)
+			} else {
+				s.addToken(token.GREATER)
+			}
 		case "\n":
 			s.line += 1
+		default:
+			// TODO: return an error
 		}
 
 	}
@@ -65,6 +94,32 @@ func (s *Scanner) Scan() error {
 	return nil
 }
 
+// next returns the current byte and advances the current position.
+func (s *Scanner) next() byte {
+	c := s.source[s.current]
+	s.current++
+	return c
+}
+
+// match returns whether the byte at the current position matches the passed in
+// byte; used for matching double charater lexemes e.g. ==, != etc.
+func (s *Scanner) match(expected string) bool {
+	if s.eof() {
+		return false
+	}
+	if string(s.source[s.current]) != expected {
+		return false
+	}
+	s.current++
+	return true
+}
+
+// eof returns whether we're at the end of the input source.
+func (s *Scanner) eof() bool {
+	return s.current >= len(s.source)
+}
+
+// addToken appends a new Toekn type to the Scanner's internal storage.
 func (s *Scanner) addToken(tokenType token.TokenType) {
 	s.tokens = append(s.tokens, &token.Token{
 		Type: tokenType,
