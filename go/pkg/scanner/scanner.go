@@ -50,8 +50,8 @@ func (s *Scanner) Scan() error {
 		return fmt.Errorf("invalid scanner")
 	}
 	for s.current < len(s.source) {
-		c := s.next()
 		s.start = s.current
+		c := s.next()
 		switch c {
 		case '(':
 			s.addToken(token.LEFT_PAREN, string(c))
@@ -184,9 +184,9 @@ func (s *Scanner) parseString() error {
 	if s.eof() {
 		return fmt.Errorf("un-terminated string")
 	}
-	s.next() // consume terminating "
-	v := string(s.source[s.start : s.current-1])
-	s.addTokenLiteral(token.STRING, v, fmt.Sprintf(`"%s"`, v)) // quoted literal as lexeme
+	s.next()                                            // consume terminating quote
+	lexeme := string(s.source[s.start+1 : s.current-1]) // trim surrounding quotes
+	s.addTokenLiteral(token.STRING, lexeme, lexeme)
 	return nil
 }
 
@@ -203,7 +203,7 @@ func (s *Scanner) parseNumber() error {
 	for isDigit(s.peek()) {
 		s.next()
 	}
-	lexeme := string(s.source[s.start-1 : s.current])
+	lexeme := string(s.source[s.start:s.current])
 	v, err := strconv.ParseFloat(lexeme, 64)
 	if err != nil {
 		return err
@@ -217,11 +217,11 @@ func (s *Scanner) parseIdent() {
 	for isAlphaNumeric(s.peek()) {
 		s.next()
 	}
-	v := string(s.source[s.start-1 : s.current])
-	if tokenType, found := token.Keywords[v]; found {
-		s.addToken(tokenType, v)
+	lexeme := string(s.source[s.start:s.current])
+	if tokenType, found := token.Keywords[lexeme]; found {
+		s.addToken(tokenType, lexeme)
 	} else {
-		s.addTokenLiteral(token.IDENTIFIER, v, v)
+		s.addTokenLiteral(token.IDENTIFIER, lexeme, lexeme)
 	}
 }
 

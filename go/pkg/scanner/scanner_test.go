@@ -166,13 +166,13 @@ func TestScanner_Scan(t *testing.T) {
 				{
 					Type:    token.STRING,
 					Literal: "bar",
-					Lexeme:  `"bar"`,
+					Lexeme:  "bar",
 					Line:    2,
 				},
 				{
 					Type:    token.STRING,
 					Literal: "hello",
-					Lexeme:  `"hello"`,
+					Lexeme:  "hello",
 					Line:    3,
 				},
 				{
@@ -244,7 +244,7 @@ func TestScanner_Scan(t *testing.T) {
 				{
 					Type:    token.STRING,
 					Literal: "bar",
-					Lexeme:  `"bar"`,
+					Lexeme:  "bar",
 					Line:    2,
 				},
 				{
@@ -369,7 +369,7 @@ func TestScanner_Scan(t *testing.T) {
 				{
 					Type:    token.STRING,
 					Literal: "testing",
-					Lexeme:  `"testing"`,
+					Lexeme:  "testing",
 					Line:    6,
 				},
 				{
