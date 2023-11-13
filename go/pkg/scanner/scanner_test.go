@@ -40,9 +40,15 @@ func TestScanner_Scan(t *testing.T) {
 			false,
 		},
 		{
+			"Illegal character case",
+			func() io.Reader { return strings.NewReader("$ hello") },
+			nil,
+			true,
+		},
+		{
 			"Multi tokens case",
 			func() io.Reader {
-				return strings.NewReader("// this is a comment, with + - = != things!\n! = \n( \t\r <= >= \n) < > ?\n { }\n, .  + \n -  * \n;!= /  == !\n// the end + !=")
+				return strings.NewReader("// this is a comment, with + - = != things!\n! = \n( \t\r <= >= \n) < > \n { }\n, .  + \n -  * \n;!= /  == !\n// the end + !=")
 			},
 			[]*token.Token{
 				{

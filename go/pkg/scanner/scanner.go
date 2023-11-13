@@ -130,7 +130,7 @@ func (s *Scanner) Scan() error {
 				s.parseIdent()
 				continue
 			}
-			// TODO: return an error
+			return fmt.Errorf("illegal character: %v", string(c))
 		}
 
 	}
