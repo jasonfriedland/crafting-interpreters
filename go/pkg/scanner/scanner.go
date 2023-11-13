@@ -54,48 +54,48 @@ func (s *Scanner) Scan() error {
 		s.start = s.current
 		switch c {
 		case '(':
-			s.addToken(token.LEFT_PAREN)
+			s.addToken(token.LEFT_PAREN, string(c))
 		case ')':
-			s.addToken(token.RIGHT_PAREN)
+			s.addToken(token.RIGHT_PAREN, string(c))
 		case '{':
-			s.addToken(token.LEFT_BRACE)
+			s.addToken(token.LEFT_BRACE, string(c))
 		case '}':
-			s.addToken(token.RIGHT_BRACE)
+			s.addToken(token.RIGHT_BRACE, string(c))
 		case ',':
-			s.addToken(token.COMMA)
+			s.addToken(token.COMMA, string(c))
 		case '.':
-			s.addToken(token.DOT)
+			s.addToken(token.DOT, string(c))
 		case '-':
-			s.addToken(token.MINUS)
+			s.addToken(token.MINUS, string(c))
 		case '+':
-			s.addToken(token.PLUS)
+			s.addToken(token.PLUS, string(c))
 		case ';':
-			s.addToken(token.SEMICOLON)
+			s.addToken(token.SEMICOLON, string(c))
 		case '*':
-			s.addToken(token.STAR)
+			s.addToken(token.STAR, string(c))
 		case '!':
 			if s.match("=") {
-				s.addToken(token.BANG_EQUAL)
+				s.addToken(token.BANG_EQUAL, "!=")
 			} else {
-				s.addToken(token.BANG)
+				s.addToken(token.BANG, string(c))
 			}
 		case '=':
 			if s.match("=") {
-				s.addToken(token.EQUAL_EQUAL)
+				s.addToken(token.EQUAL_EQUAL, "==")
 			} else {
-				s.addToken(token.EQUAL)
+				s.addToken(token.EQUAL, string(c))
 			}
 		case '<':
 			if s.match("=") {
-				s.addToken(token.LESS_EQUAL)
+				s.addToken(token.LESS_EQUAL, "<=")
 			} else {
-				s.addToken(token.LESS)
+				s.addToken(token.LESS, string(c))
 			}
 		case '>':
 			if s.match("=") {
-				s.addToken(token.GREATER_EQUAL)
+				s.addToken(token.GREATER_EQUAL, ">=")
 			} else {
-				s.addToken(token.GREATER)
+				s.addToken(token.GREATER, string(c))
 			}
 		case '/':
 			if s.match("/") {
@@ -104,7 +104,7 @@ func (s *Scanner) Scan() error {
 					s.next()
 				}
 			} else {
-				s.addToken(token.SLASH)
+				s.addToken(token.SLASH, string(c))
 			}
 		case '"':
 			err := s.parseString()
@@ -135,7 +135,7 @@ func (s *Scanner) Scan() error {
 
 	}
 	// Lastly append an EOF
-	s.addToken(token.EOF)
+	s.addToken(token.EOF, "")
 	return nil
 }
 
@@ -185,7 +185,8 @@ func (s *Scanner) parseString() error {
 		return fmt.Errorf("un-terminated string")
 	}
 	s.next() // consume terminating "
-	s.addTokenLiteral(token.STRING, string(s.source[s.start:s.current-1]))
+	v := string(s.source[s.start : s.current-1])
+	s.addTokenLiteral(token.STRING, v, fmt.Sprintf(`"%s"`, v)) // quoted literal as lexeme
 	return nil
 }
 
@@ -202,11 +203,12 @@ func (s *Scanner) parseNumber() error {
 	for isDigit(s.peek()) {
 		s.next()
 	}
-	v, err := strconv.ParseFloat(string(s.source[s.start-1:s.current]), 64)
+	lexeme := string(s.source[s.start-1 : s.current])
+	v, err := strconv.ParseFloat(lexeme, 64)
 	if err != nil {
 		return err
 	}
-	s.addTokenLiteral(token.NUMBER, v)
+	s.addTokenLiteral(token.NUMBER, v, lexeme)
 	return nil
 }
 
@@ -217,9 +219,9 @@ func (s *Scanner) parseIdent() {
 	}
 	v := string(s.source[s.start-1 : s.current])
 	if tokenType, found := token.Keywords[v]; found {
-		s.addToken(tokenType)
+		s.addToken(tokenType, v)
 	} else {
-		s.addTokenLiteral(token.IDENTIFIER, v)
+		s.addTokenLiteral(token.IDENTIFIER, v, v)
 	}
 }
 
@@ -229,17 +231,18 @@ func (s *Scanner) eof() bool {
 }
 
 // addToken adds a token that doesn't require a literal value.
-func (s *Scanner) addToken(tokenType token.TokenType) {
-	s.addTokenLiteral(tokenType, nil)
+func (s *Scanner) addToken(tokenType token.TokenType, lexeme string) {
+	s.addTokenLiteral(tokenType, nil, lexeme)
 }
 
 // addTokenLiteral appends a new Token type with literal value to the Scanner's
 // internal storage.
-func (s *Scanner) addTokenLiteral(tokenType token.TokenType, value any) {
+func (s *Scanner) addTokenLiteral(tokenType token.TokenType, literal any, lexeme string) {
 	s.tokens = append(s.tokens, &token.Token{
 		Type:    tokenType,
 		Line:    s.line,
-		Literal: value,
+		Literal: literal,
+		Lexeme:  lexeme,
 	})
 }
 

@@ -86,5 +86,5 @@ type Token struct {
 
 // String representation of a token.
 func (t Token) String() string {
-	return fmt.Sprintf("{ type:%s, lexeme:%s, literal:%s, line:%d }", t.Type, t.Lexeme, t.Literal, t.Line)
+	return fmt.Sprintf("{type:%s, lexeme:%s, literal:%s, line:%d}", t.Type, t.Lexeme, t.Literal, t.Line)
 }
