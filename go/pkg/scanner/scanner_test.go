@@ -2,6 +2,7 @@ package scanner
 
 import (
 	"io"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -12,19 +13,19 @@ import (
 func TestScanner_Scan(t *testing.T) {
 	tests := []struct {
 		name    string
-		r       io.Reader
+		r       func() io.Reader
 		want    []*token.Token
 		wantErr bool
 	}{
 		{
 			"Empty case",
-			nil,
+			func() io.Reader { return nil },
 			nil,
 			true,
 		},
 		{
 			"EOL match case",
-			strings.NewReader("/"),
+			func() io.Reader { return strings.NewReader("/") },
 			[]*token.Token{
 				{
 					Type: token.SLASH,
@@ -38,8 +39,10 @@ func TestScanner_Scan(t *testing.T) {
 			false,
 		},
 		{
-			"Multi case",
-			strings.NewReader("// this is a comment, with + - = != things!\n!he = llo\n( how\t\r <= >= \n) < > are you?\ni {am}\nwell, well. lets + this\nand - the * as\nwell;!= / and == !\n// the end + !="),
+			"Multi tokens case",
+			func() io.Reader {
+				return strings.NewReader("// this is a comment, with + - = != things!\n! = \n( \t\r <= >= \n) < > ?\n { }\n, .  + \n -  * \n;!= /  == !\n// the end + !=")
+			},
 			[]*token.Token{
 				{
 					Type: token.BANG,
@@ -130,7 +133,7 @@ func TestScanner_Scan(t *testing.T) {
 		},
 		{
 			"String case",
-			strings.NewReader("// this is a comment\n\"bar\"\n\"hello\"\n"),
+			func() io.Reader { return strings.NewReader("// this is a comment\n\"bar\"\n\"hello\"\n") },
 			[]*token.Token{
 				{
 					Type:    token.STRING,
@@ -151,14 +154,184 @@ func TestScanner_Scan(t *testing.T) {
 		},
 		{
 			"String un-terminated case",
-			strings.NewReader("\"foo"),
+			func() io.Reader { return strings.NewReader("\"foo") },
 			nil,
 			true,
+		},
+		{
+			"Number case",
+			func() io.Reader { return strings.NewReader("// this is a comment\n34.202\n86723\n") },
+			[]*token.Token{
+				{
+					Type:    token.NUMBER,
+					Literal: 34.202,
+					Line:    2,
+				},
+				{
+					Type:    token.NUMBER,
+					Literal: 86723.0,
+					Line:    3,
+				},
+				{
+					Type: token.EOF,
+					Line: 4,
+				},
+			},
+			false,
+		},
+		{
+			"Identifiers case",
+			func() io.Reader { return strings.NewReader("// this is a comment\nif true { foo = \"bar\" }\n") },
+			[]*token.Token{
+				{
+					Type: token.IF,
+					Line: 2,
+				},
+				{
+					Type: token.TRUE,
+					Line: 2,
+				},
+				{
+					Type: token.LEFT_BRACE,
+					Line: 2,
+				},
+				{
+					Type:    token.IDENTIFIER,
+					Literal: "foo",
+					Line:    2,
+				},
+				{
+					Type: token.EQUAL,
+					Line: 2,
+				},
+				{
+					Type:    token.STRING,
+					Literal: "bar",
+					Line:    2,
+				},
+				{
+					Type: token.RIGHT_BRACE,
+					Line: 2,
+				},
+				{
+					Type: token.EOF,
+					Line: 3,
+				},
+			},
+			false,
+		},
+		{
+			"Read source-1.txt case",
+			func() io.Reader {
+				f, _ := os.Open("testdata/source-1.txt")
+				return f
+			},
+			[]*token.Token{
+				{
+					Type: token.CLASS,
+					Line: 1,
+				},
+				{
+					Type:    token.IDENTIFIER,
+					Literal: "foo",
+					Line:    1,
+				},
+				{
+					Type: token.LEFT_BRACE,
+					Line: 1,
+				},
+				{
+					Type: token.FUN,
+					Line: 2,
+				},
+				{
+					Type:    token.IDENTIFIER,
+					Literal: "bar",
+					Line:    2,
+				},
+				{
+					Type: token.LEFT_PAREN,
+					Line: 2,
+				},
+				{
+					Type: token.RIGHT_PAREN,
+					Line: 2,
+				},
+				{
+					Type: token.LEFT_BRACE,
+					Line: 2,
+				},
+				{
+					Type: token.IF,
+					Line: 3,
+				},
+				{
+					Type:    token.IDENTIFIER,
+					Literal: "x",
+					Line:    3,
+				},
+				{
+					Type: token.EQUAL_EQUAL,
+					Line: 3,
+				},
+				{
+					Type: token.TRUE,
+					Line: 3,
+				},
+				{
+					Type: token.LEFT_BRACE,
+					Line: 3,
+				},
+				{
+					Type: token.RETURN,
+					Line: 4,
+				},
+				{
+					Type:    token.NUMBER,
+					Literal: 45.0,
+					Line:    4,
+				},
+				{
+					Type: token.RIGHT_BRACE,
+					Line: 5,
+				},
+				{
+					Type: token.VAR,
+					Line: 6,
+				},
+				{
+					Type:    token.IDENTIFIER,
+					Literal: "baz",
+					Line:    6,
+				},
+				{
+					Type: token.EQUAL,
+					Line: 6,
+				},
+				{
+					Type:    token.STRING,
+					Literal: "testing",
+					Line:    6,
+				},
+				{
+					Type: token.RIGHT_BRACE,
+					Line: 7,
+				},
+				{
+					Type: token.RIGHT_BRACE,
+					Line: 8,
+				},
+				{
+					Type: token.EOF,
+					Line: 9,
+				},
+			},
+			false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s, _ := New(tt.r)
+			s, _ := New(tt.r())
 			err := s.Scan()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Scanner.Scan() error = %v, wantErr %v", err, tt.wantErr)
@@ -208,6 +381,46 @@ func TestNew(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("New() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_isDigit(t *testing.T) {
+	type args struct {
+		c []byte
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			"Simple case",
+			args{
+				[]byte("2"),
+			},
+			true,
+		},
+		{
+			"False case, string",
+			args{
+				[]byte("S"),
+			},
+			false,
+		},
+		{
+			"False case, symbol",
+			args{
+				[]byte("|"),
+			},
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isDigit(tt.args.c[0]); got != tt.want {
+				t.Errorf("isDigit() = %v, want %v", got, tt.want)
 			}
 		})
 	}

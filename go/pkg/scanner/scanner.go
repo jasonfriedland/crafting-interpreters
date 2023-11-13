@@ -3,7 +3,7 @@ package scanner
 import (
 	"fmt"
 	"io"
-	"strings"
+	"strconv"
 
 	"github.com/jasonfriedland/crafting-interpreters/pkg/token"
 )
@@ -11,6 +11,7 @@ import (
 // Scanner is a Scanner type.
 type Scanner struct {
 	current int // position of scanner
+	start   int // start position of current lexeme
 	line    int
 	source  []byte
 	tokens  []*token.Token
@@ -40,52 +41,53 @@ func (s *Scanner) Scan() error {
 	}
 	for s.current < len(s.source) {
 		c := s.next()
-		switch string(c) {
-		case "(":
+		s.start = s.current
+		switch c {
+		case '(':
 			s.addToken(token.LEFT_PAREN)
-		case ")":
+		case ')':
 			s.addToken(token.RIGHT_PAREN)
-		case "{":
+		case '{':
 			s.addToken(token.LEFT_BRACE)
-		case "}":
+		case '}':
 			s.addToken(token.RIGHT_BRACE)
-		case ",":
+		case ',':
 			s.addToken(token.COMMA)
-		case ".":
+		case '.':
 			s.addToken(token.DOT)
-		case "-":
+		case '-':
 			s.addToken(token.MINUS)
-		case "+":
+		case '+':
 			s.addToken(token.PLUS)
-		case ";":
+		case ';':
 			s.addToken(token.SEMICOLON)
-		case "*":
+		case '*':
 			s.addToken(token.STAR)
-		case "!":
+		case '!':
 			if s.match("=") {
 				s.addToken(token.BANG_EQUAL)
 			} else {
 				s.addToken(token.BANG)
 			}
-		case "=":
+		case '=':
 			if s.match("=") {
 				s.addToken(token.EQUAL_EQUAL)
 			} else {
 				s.addToken(token.EQUAL)
 			}
-		case "<":
+		case '<':
 			if s.match("=") {
 				s.addToken(token.LESS_EQUAL)
 			} else {
 				s.addToken(token.LESS)
 			}
-		case ">":
+		case '>':
 			if s.match("=") {
 				s.addToken(token.GREATER_EQUAL)
 			} else {
 				s.addToken(token.GREATER)
 			}
-		case "/":
+		case '/':
 			if s.match("/") {
 				// A comment goes until the end of the line.
 				for string(s.peek()) != "\n" && !s.eof() {
@@ -94,19 +96,30 @@ func (s *Scanner) Scan() error {
 			} else {
 				s.addToken(token.SLASH)
 			}
-		case `"`:
+		case '"':
 			err := s.parseString()
 			if err != nil {
 				return err
 			}
 		// Ignore the following
-		case " ":
-		case "\r":
-		case "\t":
+		case ' ':
+		case '\r':
+		case '\t':
 		// New line
-		case "\n":
+		case '\n':
 			s.line += 1
 		default:
+			if isDigit(c) {
+				err := s.parseNumber()
+				if err != nil {
+					return err
+				}
+				continue
+			}
+			if isAlpha(c) {
+				s.parseIdent()
+				continue
+			}
 			// TODO: return an error
 		}
 
@@ -131,6 +144,15 @@ func (s *Scanner) peek() byte {
 	return s.source[s.current]
 }
 
+// peekNext returns the next + 1 byte character but doesn't increment the
+// counter.
+func (s *Scanner) peekNext() byte {
+	if s.eof() {
+		return 0
+	}
+	return s.source[s.current+1]
+}
+
 // match returns whether the byte at the current position matches the passed in
 // byte; used for matching double charater lexemes e.g. ==, != etc.
 func (s *Scanner) match(expected string) bool {
@@ -146,16 +168,49 @@ func (s *Scanner) match(expected string) bool {
 
 // parseString parses a string literal.
 func (s *Scanner) parseString() error {
-	var v strings.Builder
 	for string(s.peek()) != `"` && !s.eof() {
-		v.WriteString(string(s.next()))
+		s.next()
 	}
 	if s.eof() {
 		return fmt.Errorf("un-terminated string")
 	}
 	s.next() // consume terminating "
-	s.addTokenLiteral(token.STRING, v.String())
+	s.addTokenLiteral(token.STRING, string(s.source[s.start:s.current-1]))
 	return nil
+}
+
+// parseNumber parses a number literal.
+func (s *Scanner) parseNumber() error {
+	for isDigit(s.peek()) {
+		s.next()
+	}
+	// Look for a fractional part
+	if s.peek() == '.' && isDigit(s.peekNext()) {
+		// Consume the "."
+		s.next()
+	}
+	for isDigit(s.peek()) {
+		s.next()
+	}
+	v, err := strconv.ParseFloat(string(s.source[s.start-1:s.current]), 64)
+	if err != nil {
+		return err
+	}
+	s.addTokenLiteral(token.NUMBER, v)
+	return nil
+}
+
+// parseIdent parses identifier and keyword literals.
+func (s *Scanner) parseIdent() {
+	for isAlphaNumeric(s.peek()) {
+		s.next()
+	}
+	v := string(s.source[s.start-1 : s.current])
+	if tokenType, found := token.Keywords[v]; found {
+		s.addToken(tokenType)
+	} else {
+		s.addTokenLiteral(token.IDENTIFIER, v)
+	}
 }
 
 // eof returns whether we're at the end of the input source.
@@ -176,4 +231,21 @@ func (s *Scanner) addTokenLiteral(tokenType token.TokenType, value any) {
 		Line:    s.line,
 		Literal: value,
 	})
+}
+
+// isDigit returns whether the arg is a digit.
+func isDigit(c byte) bool {
+	return c >= '0' && c <= '9'
+}
+
+// isAlpha returns whether the arg is alpha.
+func isAlpha(c byte) bool {
+	return (c >= 'a' && c <= 'z') ||
+		(c >= 'A' && c <= 'Z') ||
+		c == '_'
+}
+
+// isAlphanumeric returns whether the arg is alphanumeric.
+func isAlphaNumeric(c byte) bool {
+	return isAlpha(c) || isDigit(c)
 }
