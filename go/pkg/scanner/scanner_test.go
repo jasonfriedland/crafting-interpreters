@@ -221,7 +221,7 @@ func TestScanner_Scan(t *testing.T) {
 			false,
 		},
 		{
-			"Read source-1.txt case",
+			"Read source-1.txt case, valid source",
 			func() io.Reader {
 				f, _ := os.Open("testdata/source-1.txt")
 				return f
@@ -327,6 +327,15 @@ func TestScanner_Scan(t *testing.T) {
 				},
 			},
 			false,
+		},
+		{
+			"Read source-1.txt case, error source",
+			func() io.Reader {
+				f, _ := os.Open("testdata/source-2.txt")
+				return f
+			},
+			nil,
+			true,
 		},
 	}
 	for _, tt := range tests {

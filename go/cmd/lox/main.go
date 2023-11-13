@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+
+	"github.com/jasonfriedland/crafting-interpreters/pkg/scanner"
 )
 
 type parseError struct {
@@ -12,13 +14,13 @@ type parseError struct {
 }
 
 func (e parseError) Error() string {
-	return fmt.Sprintf("line: %d, error: %s", e.line, e.message)
+	return fmt.Sprintf("%s, line: %d", e.message, e.line)
 }
 
 func main() {
 	var err error
 	if len(os.Args) > 2 {
-		fmt.Println("error: invalid args")
+		fmt.Fprintf(os.Stderr, "error: invalid args\n")
 		os.Exit(-1)
 	}
 	if len(os.Args) == 2 {
@@ -27,7 +29,7 @@ func main() {
 		err = runPrompt()
 	}
 	if err != nil {
-		fmt.Println("error:", err)
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(-1)
 	}
 }
@@ -45,6 +47,14 @@ func runPrompt() error {
 }
 
 func run(r io.Reader) error {
-	fmt.Println("running")
+	s, err := scanner.New(r)
+	if err != nil {
+		return err
+	}
+	err = s.Scan()
+	if err != nil {
+		return parseError{message: err.Error(), line: s.Line()}
+	}
+	fmt.Println(s.Tokens())
 	return nil
 }

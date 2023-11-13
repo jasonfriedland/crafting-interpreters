@@ -33,6 +33,16 @@ func New(r io.Reader) (*Scanner, error) {
 	return s, nil
 }
 
+// Tokens returns the scanner's parsed tokens.
+func (s *Scanner) Tokens() []*token.Token {
+	return s.tokens
+}
+
+// Line returns the scanner's current line number.
+func (s *Scanner) Line() int {
+	return s.line
+}
+
 // Scan is the main routine of a Scanner which iterates over the source, and
 // generates a slice of tokens.
 func (s *Scanner) Scan() error {

@@ -1,0 +1,6 @@
+class foo {
+    fun bar () {
+        if x == true {
+            return 45
+        }
+        var baz = "testing
