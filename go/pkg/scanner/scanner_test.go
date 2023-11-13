@@ -128,6 +128,33 @@ func TestScanner_Scan(t *testing.T) {
 			},
 			false,
 		},
+		{
+			"String case",
+			strings.NewReader("// this is a comment\n\"bar\"\n\"hello\"\n"),
+			[]*token.Token{
+				{
+					Type:    token.STRING,
+					Literal: "bar",
+					Line:    2,
+				},
+				{
+					Type:    token.STRING,
+					Literal: "hello",
+					Line:    3,
+				},
+				{
+					Type: token.EOF,
+					Line: 4,
+				},
+			},
+			false,
+		},
+		{
+			"String un-terminated case",
+			strings.NewReader("\"foo"),
+			nil,
+			true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

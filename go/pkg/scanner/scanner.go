@@ -3,13 +3,14 @@ package scanner
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/jasonfriedland/crafting-interpreters/pkg/token"
 )
 
 // Scanner is a Scanner type.
 type Scanner struct {
-	current int
+	current int // position of scanner
 	line    int
 	source  []byte
 	tokens  []*token.Token
@@ -93,6 +94,11 @@ func (s *Scanner) Scan() error {
 			} else {
 				s.addToken(token.SLASH)
 			}
+		case `"`:
+			err := s.parseString()
+			if err != nil {
+				return err
+			}
 		// Ignore the following
 		case " ":
 		case "\r":
@@ -138,15 +144,36 @@ func (s *Scanner) match(expected string) bool {
 	return true
 }
 
+// parseString parses a string literal.
+func (s *Scanner) parseString() error {
+	var v strings.Builder
+	for string(s.peek()) != `"` && !s.eof() {
+		v.WriteString(string(s.next()))
+	}
+	if s.eof() {
+		return fmt.Errorf("un-terminated string")
+	}
+	s.next() // consume terminating "
+	s.addTokenLiteral(token.STRING, v.String())
+	return nil
+}
+
 // eof returns whether we're at the end of the input source.
 func (s *Scanner) eof() bool {
 	return s.current >= len(s.source)
 }
 
-// addToken appends a new Toekn type to the Scanner's internal storage.
+// addToken adds a token that doesn't require a literal value.
 func (s *Scanner) addToken(tokenType token.TokenType) {
+	s.addTokenLiteral(tokenType, nil)
+}
+
+// addTokenLiteral appends a new Token type with literal value to the Scanner's
+// internal storage.
+func (s *Scanner) addTokenLiteral(tokenType token.TokenType, value any) {
 	s.tokens = append(s.tokens, &token.Token{
-		Type: tokenType,
-		Line: s.line,
+		Type:    tokenType,
+		Line:    s.line,
+		Literal: value,
 	})
 }
